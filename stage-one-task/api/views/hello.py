@@ -27,7 +27,7 @@ def hello() -> Response:
             user_ip = request.remote_addr
 
         # retrieve path params
-        name = request.args.get('visitor_name')
+        name = request.args.get('visitor_name', 'Mark')
         # use user's ip to get his location and location weather
         location, country, temperature = user_locate(user_ip)
         if not location or not country or not temperature:
