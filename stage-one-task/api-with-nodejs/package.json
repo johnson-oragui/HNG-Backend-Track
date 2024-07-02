@@ -1,0 +1,29 @@
+{
+  "name": "api-with-nodejs",
+  "version": "1.0.0",
+  "description": "HNG Internship Task one",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/johnson-oragui/HNG-Backend-Track.git"
+  },
+  "author": "Johnson Oragui",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/johnson-oragui/HNG-Backend-Track/issues"
+  },
+  "homepage": "https://github.com/johnson-oragui/HNG-Backend-Track#readme",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "geoip-lite2": "^2.1.37",
+    "maxmind": "^4.3.20",
+    "maxmind-db": "^0.0.4",
+    "nodemon": "^3.1.4"
+  }
+}
