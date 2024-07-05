@@ -2,6 +2,7 @@
 """
 Organisation model
 """
+from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid import uuid4
 from models.base import Base
@@ -14,15 +15,18 @@ class Organisation(Base):
     """
     # orgId represents the id of each organisation
     orgId: Mapped[str] = mapped_column(
+        String(60),
         primary_key=True,
         unique=True,
         default=lambda: str(uuid4()),
         nullable=False
         )
     # name represents the name of each organisation
-    name: Mapped[str] = mapped_column(nullable=False)
+    name: Mapped[str] = mapped_column(String(60), nullable=False)
     # description represents the description forf each organisation
-    description: Mapped[str]
+    description: Mapped[str] = mapped_column(String(60))
 
     # users represent the relationship between users and organisation(s)
-    users: Mapped[list] = relationship("User", secondary="user_organisations")
+    users: Mapped[list] = relationship("User",
+                                       secondary="user_organisations",
+                                       back_populates="organisations")
