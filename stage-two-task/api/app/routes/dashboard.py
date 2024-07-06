@@ -20,24 +20,25 @@ class DashBoard(MethodView):
         """
         Handles a user record
         """
-        print("id: ", id)
+        print('token valid, entered protected route.')
+        payload = {
+            "status": "Bad Request",
+            "message": "Client error",
+            "statusCode": 400
+        }
         try:
             with DBStorage() as session:
                 user = session.get('User', id)
             if user:
-                payload = {
-                    "status": "success",
-                    "message": "Successful",
-                    "data": user
-                }
+                payload.pop("statusCode", None)
+                payload["status"] = "success"
+                payload["message"] = "Successfull"
+                payload["data"] = user
                 return jsonify(payload), 200
         except Exception as exc:
             print(f'error in users route: {exc}')
-        error_payload = {
-            "status": "Bad request",
-            "message": "Authentication failed",
-            "statusCode": 401
-        }
-        return jsonify(error_payload), 401
+            return jsonify(payload), 401
+
+        return jsonify(payload), 401
 
 dashboard.add_url_rule('/<string:id>', view_func=DashBoard.as_view("dashboard"))
