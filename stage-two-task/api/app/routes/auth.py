@@ -2,7 +2,7 @@
 """
 Module for user registration
 """
-from flask import Blueprint, make_response, request, jsonify
+from flask import Blueprint, request, jsonify
 from flask.views import MethodView
 from utils.validate_data import validate_data
 from models import DBStorage
@@ -19,55 +19,41 @@ class Register(MethodView):
         """
         Registers a user
         """
+        payload =  {
+                    "status": "Bad request",
+                    "message": "Registration unsuccessful",
+                    "statusCode": 400
+                }
         try:
             if request.content_type == "application/json":
                 data = request.get_json()
-                valid_data = validate_data(data)  # returns False or escaped data
-                if not valid_data:
+                valid_data, is_valid = validate_data(data)  # returns escaped data and bool
+                if not is_valid:
                     print('valid_data: ', valid_data)
-                    error_msg =  {
-                                "status": "Bad request",
-                                "message": "Registration unsuccessful",
-                                "statusCode": 400
-                            }
-
-                    res = make_response(jsonify(error_msg))
-                    return res, 400
+                    res = jsonify(valid_data)
+                    return res, 422
                 try:
                     print('valid_data: ', valid_data)
                     with DBStorage() as session:
                         new_user = session.add_update_user(user_dict=valid_data, update=False)
                 except Exception as exc:
                     print(f'exception occured during registration: {exc}')
-                    error_msg =  {
-                                "status": "Bad request",
-                                "message": "Registration unsuccessful",
-                                "statusCode": 400
-                            }
-
-                    res = make_response(jsonify(error_msg))
-                    return res, 400
+                    return jsonify(payload), 400
                 if new_user:
                     print('new_user: ', new_user)
                     token = AuthManager.gerenate_token(new_user)
-                    payload = {
-                        "status": "success",
-                        "message": "Registration successful",
-                        "data": {
+                    payload.pop("statusCode", None)
+                    payload["status"] = "success"
+                    payload["message"] =  "Registration successful",
+                    payload["data"] = {
                             "accessToken": token,
                             "user": new_user
                         }
-                    }
                     return jsonify(payload), 201
-            error_msg =  {
-                "status": "Bad request",
-                "message": "Registration unsuccessful",
-                "statusCode": 400}
-
-            res = make_response(jsonify(error_msg))
-            return res
+            return jsonify(payload), 400
         except Exception as exc:
             print(f'Error in registering a new user" {exc}')
+            return jsonify(payload), 400
 
 
 class Login(MethodView):
@@ -78,39 +64,37 @@ class Login(MethodView):
         """
         Handles post login request
         """
-        try:
-            if request.content_type == "application/json":
-                data = request.get_json()
-                valid_data = validate_data(data, reg=False)
-                if valid_data:
-                    with DBStorage() as session:
-                        user_valid = session.check_password(data)
-                    if user_valid:
-                        token = AuthManager.gerenate_token(user_dict=user_valid)
-                        if token:
-                            print('token: ', token)
-                            payload = {
-                                "status": "success",
-                                "message": "Login successful",
-                                "data": {
-                                    "accessToken": token,
-                                    "user": user_valid
-                                }
-                            }
-                            return jsonify(payload)
-        except Exception as exc:
-            print(f'Error logging in user: {exc}')
-            payload = {
-                    "status": "Bad request",
-                    "message": "Authentication failed",
-                    "statusCode": 401
-                }
-            return jsonify(payload), 401
         payload = {
                 "status": "Bad request",
                 "message": "Authentication failed",
                 "statusCode": 401
             }
+        try:
+            if request.content_type == "application/json":
+
+                data = request.get_json()
+
+                valid_data, is_valid = validate_data(data, reg=False)
+
+                if valid_data and is_valid:
+                    with DBStorage() as session:
+                        user_valid = session.check_password(data)
+                    if user_valid:
+                        print('here:')
+                        token = AuthManager.gerenate_token(user_dict=user_valid)
+                        if token:
+                            payload.pop("statusCode", None)
+                            payload["status"] = "success"
+                            payload["message"] =  "Login successful",
+                            payload["data"] = {
+                                    "accessToken": token,
+                                    "user": user_valid
+                                    }
+                            return jsonify(payload), 200
+        except Exception as exc:
+            print(f'Error logging in user: {exc}')
+            return jsonify(payload), 401
+
         print('auth error:')
         return jsonify(payload), 401
 
