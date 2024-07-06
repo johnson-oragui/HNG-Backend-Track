@@ -6,7 +6,6 @@ from os import getenv
 from dotenv import load_dotenv
 import bcrypt
 from functools import wraps
-import secrets
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.exc import SQLAlchemyError
@@ -24,7 +23,13 @@ DB_PWD = getenv('DB_PWD')
 DB_HOST = getenv('DB_HOST')
 DB_NAME = getenv('DB_NAME')
 
+PS_USER = getenv('PS_USER')
+PS_PWD = getenv('PS_PWD')
+PS_HOST = getenv('PS_HOST')
+PS_NAME = getenv('PS_NAME')
+
 CON_STRING = f'mysql+mysqlconnector://{DB_USER}:{DB_PWD}@{DB_HOST}/{DB_NAME}'
+CON_STRING2 = f"postgresql+psycopg2://{PS_USER}:{PS_PWD}@{PS_HOST}/{PS_NAME}"
 
 MODELS = {"User": User, "Organisation": Organisation, "User_Organisation": User_Organisation}
 
@@ -32,10 +37,16 @@ def check_all_attr(model):
     def check_attr(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            for key in kwargs['user_dict'].keys():
-                print('key: ', key)
-                if not (hasattr(model, key)):
-                    raise AttributeError(f"{model.__name__} does not has an attribute: {key}")
+            if model == User:
+                for key in kwargs['user_dict'].keys():
+                    print('key: ', key)
+                    if not (hasattr(model, key)):
+                        raise AttributeError(f"{model.__name__} does not have an attribute: {key}")
+            if model == Organisation:
+                for key in kwargs['org_dict'].keys():
+                    print('key: ', key)
+                    if not (hasattr(model, key)):
+                        raise AttributeError(f"{model.__name__} does not have an attribute: {key}")
             return func(*args, **kwargs)
         wrapper.__qualname__ = func.__qualname__
         return wrapper
@@ -46,7 +57,7 @@ class DBStorage:
     Class to handle table creation, database operations
     """
     def __init__(self) -> None:
-        self.engine = create_engine(CON_STRING)
+        self.engine = create_engine(CON_STRING2)
 
         self.session_factory = sessionmaker(bind=self.engine,
                                             autoflush=False,
@@ -121,7 +132,7 @@ class DBStorage:
         finally:
             print('end of transaction for add new user!')
 
-    def get(self, model, model_id):
+    def get(self, model, model_id=''):
         """
         Retrieves a specific model
         """
@@ -140,8 +151,10 @@ class DBStorage:
 
                 if klass:
                     with self.Session() as sess:
-                        if klass == User or klass == User_Organisation:
+                        if klass == User:
                             obj = sess.query(klass).filter_by(userId=model_id).one_or_none()
+                        if klass == User_Organisation:
+                            obj = sess.query(klass).filter_by(userId=model_id).all()
                         if klass == Organisation:
                             obj = sess.query(klass).filter_by(orgId=model_id).one_or_none()
 
@@ -163,8 +176,8 @@ class DBStorage:
                     ob_copy.pop('password', None)
                     ob_copy.pop('_sa_instance_state', None)
                     all_objs.append(ob_copy)
-                    return all_objs
-            if objs:
+                return all_objs
+            elif objs:
                 obj = objs.__dict__.copy()
                 obj.pop('_sa_instance_state', None)
                 obj.pop('password', None)
@@ -176,7 +189,9 @@ class DBStorage:
 
 
     @check_all_attr(model=Organisation)
-    def add_update_organisation(self, user_id: str = '', org_dict: dict = {}, update: bool = False):
+    def add_update_organisation(self, user_id: str = '',
+                                org_dict: dict = {},
+                                update: bool = False):
         """
         Handdles insertion into the users table
         """
@@ -185,30 +200,42 @@ class DBStorage:
         if not org_dict['name']:
             raise ValueError("organisation requires a name")
         try:
-            with self.Session() as session:
-                if not update:
-                    with session.begin():
-                        email_exists = session.query(User).filter_by(email=org_dict.get('email')).one_or_none()
-                        if email_exists:
-                            print('\nuser_email already exists: ')
-                            return
-
-                        new_user = User(**org_dict)
-                        session.add(new_user)
-                elif user_id and isinstance(user_id, str) and update:
-                    with session.begin():
-                        usr = session.query(User).filter_by(user_id=user_id).one_or_none()
-                        if not usr:
-                            print('\nuser does not exist: ')
-                            return
-                        for key, val in org_dict.items():
-                            setattr(usr, key, val)
-                else:
-                    raise Exception('Method is only for update and insertion!')
+            session = self.Session()
+            if not update:
+                # add organisation
+                new_org = Organisation(**org_dict)
+                session.add(new_org)
+                session.commit()
+                orgId = new_org.__dict__['orgId']
+                print('orgId: ', orgId)
+                # add user_organisation
+                new_user_org = User_Organisation(userId=user_id, orgId=orgId)
+                session.add(new_user_org)
+                session.commit()
+                return orgId
         except SQLAlchemyError as exc:
             print(f'An error occured in add new user: {exc}')
+            session.rollback()
         finally:
             print('end of transaction for add new user!')
+
+    def add_user_organization(self, orgId=None, userId=None):
+        """
+        Inserts a user and an organization into user_organization table
+        """
+        try:
+            with self.Session() as session:
+                user = session.query(User).filter_by(userId=userId).one_or_none()
+                if not user:
+                    return
+                new_user_org = User_Organisation(userId=userId, orgId=orgId)
+                session.add(new_user_org)
+                session.commit()
+                return True
+        except Exception as exc:
+            print(f'error adding userId and orgId to user_organization: {exc}')
+            return False
+        return
 
     def check_password(self, data):
         """
@@ -224,12 +251,12 @@ class DBStorage:
 
                 hashed: str = usr['password'].encode()
                 plain_pwd: str = data['password'].encode()
-                hashed_to_compare = bcrypt.hashpw(plain_pwd, bcrypt.gensalt())
-                result = secrets.compare_digest(hashed_to_compare, hashed)
+                result = bcrypt.checkpw(plain_pwd, hashed)
                 if result:
                     usr.pop('password', None)
                     return usr
                 else:
+                    print('here pass check is false:')
                     return result
         except Exception as exc:
             print(f'error in checking password: {exc}')
