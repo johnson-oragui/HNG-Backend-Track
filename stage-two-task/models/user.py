@@ -40,7 +40,7 @@ class User(Base):
                                                back_populates="users")
 
     @staticmethod
-    def set_password(plaintext_password):
+    def set_password(plaintext_password: str):
         """
         Sets the password for the user, hashing it securely with bcrypt.
         """
