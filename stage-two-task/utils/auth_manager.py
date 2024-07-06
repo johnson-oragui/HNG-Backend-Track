@@ -3,12 +3,14 @@
 Generate and Verify access token
 """
 from os import getenv
-import bcrypt
+from dotenv import load_dotenv
 import jwt
-import secrets
 from datetime import datetime, timedelta
 from functools import wraps
+from flask import jsonify
 
+
+load_dotenv()
 JWT_SECRET = getenv('JWT_SECRET')
 
 
@@ -22,11 +24,13 @@ class AuthManager:
         Generate token using email and id
         """
         try:
+            now = datetime.utcnow()
             payload = {
-                "email": user_dict['email'],
-                "exp": datetime.now() + timedelta(minutes=5),  #expiration time
-                "iat": datetime.now()  # issued at
+                "userId": user_dict['userId'],
+                "iat": now,  # issued at
+                "exp": now + timedelta(days=10),  #expiration time
             }
+
             token = jwt.encode(payload=payload, key=JWT_SECRET, algorithm="HS256")
             return token
         except Exception as exc:
@@ -35,39 +39,51 @@ class AuthManager:
     @staticmethod
     def verify_jwt_token(token=None):
         try:
-            payload = jwt.decode(token, JWT_SECRET, algorithm=['HS256'])
-            return payload['email']
-        except jwt.ExpiredSignatureError as exc:
-            print(f'token expired: {exc}')
-            return False
-        except jwt.InvalidTokenError:
-            print(f'token invalid: {exc}')
-            return False
+            payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
+            return payload['userId']
         except Exception as exc:
             print(f'error verifying token: {exc}')
             return False
 
     @staticmethod
-    def login_required(request):
+    def decode_token_without_validation(token):
+        """
+        For payload inspection
+        """
+        try:
+            # Decode the token without signature verification to inspect the payload
+            payload = jwt.decode(token, options={"verify_signature": False})
+            print(f"Decoded token payload without validation: {payload}")
+            return payload
+        except jwt.InvalidTokenError as e:
+            return {"error": str(e)}
+
+    @staticmethod
+    def login_required(request, org=False):
         def protected(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
                 """
                 Wrapper to validate access token
                 """
+                error_payload = {
+                                "status": "Bad request",
+                                "message": "Authentication failed",
+                                "statusCode": 401
+                                }
                 Authorization = request.headers.get('Authorization')
-                print("Bearer: ", Authorization)
                 try:
                     token = Authorization.split(' ')[1]
-                    if token:
-                        print('token: ', token)
-                except Exception:
-                    pass
 
-                for ar in args:
-                    print(ar)
-                for kw in kwargs:
-                    print(kw)
+                    if token:
+                        userId = AuthManager.verify_jwt_token(token)
+                        if not userId:
+                            return jsonify(error_payload)
+                except Exception as exc:
+                    print(f'error getting token: ')
+                    return jsonify(error_payload)
+                if org:
+                    args = args + (userId,)
                 return func(*args, **kwargs)
             wrapper.__qualname__ = func.__qualname__
             return wrapper
