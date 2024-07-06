@@ -13,19 +13,41 @@ def validate_data(data: dict, reg=True):
         True on validation or False on invalidation
     """
     if reg:
-        if "firstName" not in data or "lastName" not in data:
-            return False
-    if "email" not in data or "password" not in data:
-        return False
-    valid_email = is_valid_email(data.get('email'))
-    if not valid_email:
-        return False
-    for key, value in data.items():
-        if key == "password":
-            continue
-        data[key] = escape_input(value)
+        payload = {
+            "error": []
+        }
+        if not data["firstName"] or data["firstName"].strip() == '':
+            detail1 = {"firstName": data['firstName'], "message": "firstName must not be empty"}
+            payload["error"].append(detail1)
+        if not data['lastName'] or data['lastName'].strip() == '':
+            detail2 = {"lastName": data['lastName'], "message": "lastName must not be empty"}
+            payload["error"].append(detail2)
+        if not data['email'] or data['email'].strip() == '':
+            detail3 = {"email": data['email'], "message": "email must not be empty"}
+            payload["error"].append(detail3)
+        email_valid = is_valid_email(data.get('email'))
+        if isinstance(email_valid, str):
+            detail3 = {"email": data['email'], "message": email_valid}
+            payload["error"].append(detail3)
+        if not data['password'] or data['password'].strip() == '':
+            detail4 = {"password": data['password'], "message": "password must not be empty"}
+            payload["error"].append(detail4)
+        if len(payload["error"]) > 0:
+            return payload, False
+        else:
+            return payload, True
+    if not reg:
+        if "email" not in data or "password" not in data:
+            return '', False
+        valid_email = is_valid_email(data.get('email'))
+        if isinstance(valid_email, str):
+            return '', False
+        for key, value in data.items():
+            if key == "password":
+                continue
+            data[key] = escape_input(value)
 
-    return data
+        return data, True
 
 
 def is_valid_email(email):
@@ -40,7 +62,7 @@ def is_valid_email(email):
         return True
     except EmailNotValidError as e:
         print(str(e))
-        return False
+        return str(e)
 
 
 def escape_input(data):
