@@ -20,7 +20,7 @@ class DashBoard(MethodView):
         """
         Handles a user record
         """
-        print('token valid, entered protected route.')
+        # print('token valid, entered protected route.')
         payload = {
             "status": "Bad Request",
             "message": "Client error",
@@ -32,7 +32,7 @@ class DashBoard(MethodView):
             if user:
                 payload.pop("statusCode", None)
                 payload["status"] = "success"
-                payload["message"] = "Successfull"
+                payload["message"] = "Successful"
                 payload["data"] = user
                 return jsonify(payload), 200
         except Exception as exc:
