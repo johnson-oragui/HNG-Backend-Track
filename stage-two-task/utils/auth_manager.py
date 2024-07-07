@@ -28,7 +28,7 @@ class AuthManager:
             payload = {
                 "userId": user_dict['userId'],
                 "iat": now,  # issued at
-                "exp": now + timedelta(days=10),  #expiration time
+                "exp": now + timedelta(minutes=10),  #expiration time
             }
 
             token = jwt.encode(payload=payload, key=JWT_SECRET, algorithm="HS256")
@@ -53,7 +53,7 @@ class AuthManager:
         try:
             # Decode the token without signature verification to inspect the payload
             payload = jwt.decode(token, options={"verify_signature": False})
-            print(f"Decoded token payload without validation: {payload}")
+            # print(f"Decoded token payload without validation: {payload}")
             return payload
         except jwt.InvalidTokenError as e:
             return {"error": str(e)}
@@ -74,16 +74,22 @@ class AuthManager:
                 Authorization = request.headers.get('Authorization')
                 try:
                     token = Authorization.split(' ')[1]
+                    # print('token from login_required: ', token)
 
                     if token:
                         userId = AuthManager.verify_jwt_token(token)
+                        # print('userId from login_required: ', userId)
                         if not userId:
                             return jsonify(error_payload)
+
+                        if org:
+                            args = args + (userId,)
+                            # return func(*args, **kwargs)
+                    else:
+                        return jsonify(error_payload)
                 except Exception as exc:
                     print(f'error getting token: ')
                     return jsonify(error_payload)
-                if org:
-                    args = args + (userId,)
                 return func(*args, **kwargs)
             wrapper.__qualname__ = func.__qualname__
             return wrapper
