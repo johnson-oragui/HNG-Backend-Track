@@ -22,9 +22,6 @@ def validate_data(data: dict, reg=True):
         if not data['lastName'] or data['lastName'].strip() == '':
             detail2 = {"lastName": data['lastName'], "message": "lastName must not be empty"}
             payload["error"].append(detail2)
-        if not data['email'] or data['email'].strip() == '':
-            detail3 = {"email": data['email'], "message": "email must not be empty"}
-            payload["error"].append(detail3)
         email_valid = is_valid_email(data.get('email'))
         if isinstance(email_valid, str):
             detail3 = {"email": data['email'], "message": email_valid}
@@ -35,7 +32,7 @@ def validate_data(data: dict, reg=True):
         if len(payload["error"]) > 0:
             return payload, False
         else:
-            return payload, True
+            return data, True
     if not reg:
         if "email" not in data or "password" not in data:
             return '', False
