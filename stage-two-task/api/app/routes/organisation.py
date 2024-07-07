@@ -19,9 +19,9 @@ class Organisations(MethodView):
     @AuthManager.login_required(request=request, org=True)
     def get(self, userId):
         """
-        Handles a user record
+        Handles retriving all organisations
         """
-        print('handling all organisations for a single user...')
+        # print('handling all organisations for a single user...')
         payload = {
             "status": "Bad Request",
             "message": "Client error",
@@ -40,7 +40,7 @@ class Organisations(MethodView):
                             orgs_for_user_with_id.append(orgs)
                 payload.pop("statusCode", None)
                 payload["status"] = "success"
-                payload["message"] = "Successfull"
+                payload["message"] = "Successful"
                 payload["data"] = {"organisations": orgs_for_user_with_id}
                 return jsonify(payload), 200
 
@@ -56,37 +56,43 @@ class Organisations(MethodView):
         Create new organization
 
         """
-        print('handling creation of a single organisation for a single user...')
+        # print('handling creation of a single organisation for a single user...')
         payload = {
             "status": "Bad Request",
             "message": "Client error",
             "statusCode": 400
         }
         try:
+            # print('before content type: ', request.content_type)
             if request.content_type == "application/json":
                 data: dict = request.get_json()
+                # print("Received data:", data)
                 for key, value in data.items():
                     data[key] = escape_input(value)
                 if not (data['name'].strip() == '') and isinstance(data['name'], str):
-                    if len(data) <= 2:
+                    if len(data) == 2:
+                        # print("Received data:", data)
                         with DBStorage() as sess:
                             # create an organization with the data
                             orgId = sess.add_update_organisation(user_id=userId,
                                                                        org_dict=data)
                         if orgId:
+                            # print("Organisation created successfully")
                             data["orgId"] = orgId
-                            data["description"] = data["description"] or ''
-                            payload["status"] = "success"
-                            payload["message"] = "Organisation created successfully"
-                            payload.pop("statusCode", None)
-                            payload["data"] = data
+                            data["description"] = data.get("description", '')
+
+                            payload = {
+                                "status": "success",
+                                "message": "Organisation created successfully",
+                                "data": data
+                            }
 
                             return jsonify(payload), 201
 
         except Exception as exc:
             print(f'cound not create new organization: {exc}')
             return jsonify(payload), 400
-        return jsonify(payload)
+        return jsonify(payload), 400
 
 class Organisation(MethodView):
     """
@@ -97,7 +103,7 @@ class Organisation(MethodView):
         """
         Retrieves a single organisation
         """
-        print('handling a single organisation for a single user...')
+        # print('handling a single organisation for a single user...')
         payload = {
             "status": "Bad Request",
             "message": "Client error",
@@ -110,7 +116,7 @@ class Organisation(MethodView):
             if organisation:
                 payload.pop("statusCode", None)
                 payload["status"] = "success"
-                payload["message"] = "Successfull"
+                payload["message"] = "Successful"
                 payload["data"] = organisation
                 return jsonify(payload), 200
 
@@ -125,7 +131,7 @@ class Organisation(MethodView):
         """
         Add a user to an existing organization
         """
-        print('handling adding a single user to a single organisatio...')
+        # print('handling adding a single user to a single organisatio...')
         payload = {
             "status": "Bad Request",
             "message": "Client error",
