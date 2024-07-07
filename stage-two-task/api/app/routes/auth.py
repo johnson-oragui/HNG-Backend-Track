@@ -29,22 +29,23 @@ class Register(MethodView):
                 data = request.get_json()
                 valid_data, is_valid = validate_data(data)  # returns escaped data and bool
                 if not is_valid:
-                    print('valid_data: ', valid_data)
+                    # print('valid_data: ', valid_data)
                     res = jsonify(valid_data)
                     return res, 422
                 try:
-                    print('valid_data: ', valid_data)
+                    # print('valid_data: ', valid_data)
                     with DBStorage() as session:
                         new_user = session.add_update_user(user_dict=valid_data, update=False)
                 except Exception as exc:
                     print(f'exception occured during registration: {exc}')
                     return jsonify(payload), 400
                 if new_user:
-                    print('new_user: ', new_user)
+                    # print('new_user: ', new_user)
                     token = AuthManager.gerenate_token(new_user)
+                    # print('token: ', token)
                     payload.pop("statusCode", None)
                     payload["status"] = "success"
-                    payload["message"] =  "Registration successful",
+                    payload["message"] =  'Registration successful'
                     payload["data"] = {
                             "accessToken": token,
                             "user": new_user
@@ -80,12 +81,12 @@ class Login(MethodView):
                     with DBStorage() as session:
                         user_valid = session.check_password(data)
                     if user_valid:
-                        print('here:')
+                        # print('here:')
                         token = AuthManager.gerenate_token(user_dict=user_valid)
                         if token:
                             payload.pop("statusCode", None)
                             payload["status"] = "success"
-                            payload["message"] =  "Login successful",
+                            payload["message"] =  "Login successful"
                             payload["data"] = {
                                     "accessToken": token,
                                     "user": user_valid
