@@ -18,20 +18,23 @@ from models.user_organisation import User_Organisation
 load_dotenv()
 
 # retrieve all environment variables for database connection
-DB_USER = getenv('DB_USER')
-DB_PWD = getenv('DB_PWD')
-DB_HOST = getenv('DB_HOST')
-DB_NAME = getenv('DB_NAME')
+# DB_USER = getenv('DB_USER')
+# DB_PWD = getenv('DB_PWD')
+# DB_HOST = getenv('DB_HOST')
+
+# if getenv('TEST') == 'NOT_TEST':
+#     DB_NAME = getenv('DB_NAME')
+# elif getenv('TEST') == 'TEST':
+#     DB_NAME_TEST = getenv('DB_NAME')
+
+# CON_STRING = f'mysql+mysqlconnector://{DB_USER}:{DB_PWD}@{DB_HOST}/{DB_NAME}'
 
 PS_USER = getenv('PS_USER')
 PS_PWD = getenv('PS_PWD')
 PS_HOST = getenv('PS_HOST')
-PS_NAME = getenv('PS_NAME')
 
-CON_STRING = f'mysql+mysqlconnector://{DB_USER}:{DB_PWD}@{DB_HOST}/{DB_NAME}'
-CON_STRING2 = f"postgresql+psycopg2://{PS_USER}:{PS_PWD}@{PS_HOST}/{PS_NAME}"
 
-MODELS = {"User": User, "Organisation": Organisation, "User_Organisation": User_Organisation}
+MODELS = {"User_Organisation": User_Organisation, "User": User, "Organisation": Organisation}
 
 def check_all_attr(model):
     def check_attr(func):
@@ -39,12 +42,12 @@ def check_all_attr(model):
         def wrapper(*args, **kwargs):
             if model == User:
                 for key in kwargs['user_dict'].keys():
-                    print('key: ', key)
+                    # print('key: ', key)
                     if not (hasattr(model, key)):
                         raise AttributeError(f"{model.__name__} does not have an attribute: {key}")
             if model == Organisation:
                 for key in kwargs['org_dict'].keys():
-                    print('key: ', key)
+                    # print('key: ', key)
                     if not (hasattr(model, key)):
                         raise AttributeError(f"{model.__name__} does not have an attribute: {key}")
             return func(*args, **kwargs)
@@ -57,6 +60,13 @@ class DBStorage:
     Class to handle table creation, database operations
     """
     def __init__(self) -> None:
+        test_mode = getenv('TEST')
+        if test_mode == 'TEST':
+            PS_NAME = getenv('PS_NAME_TEST')
+        elif test_mode == 'NOT_TEST':
+            PS_NAME = getenv('PS_NAME')
+
+        CON_STRING2 = f"postgresql+psycopg2://{PS_USER}:{PS_PWD}@{PS_HOST}/{PS_NAME}"
         self.engine = create_engine(CON_STRING2)
 
         self.session_factory = sessionmaker(bind=self.engine,
@@ -108,11 +118,12 @@ class DBStorage:
                     with session.begin():
                         email_exists = session.query(User).filter_by(email=user_dict.get('email')).one_or_none()
                         if email_exists:
-                            print('\nuser_email already exists: ')
+                            # print('\nuser_email already exists: ')
                             return
 
                         new_user = User(**user_dict)
                         session.add(new_user)
+                        session.commit()
                         usr = new_user.__dict__.copy()
                         usr.pop('password', None)
                         usr.pop('_sa_instance_state', None)
@@ -121,7 +132,7 @@ class DBStorage:
                     with session.begin():
                         usr = session.query(User).filter_by(user_id=user_id).one_or_none()
                         if not usr:
-                            print('\nuser does not exist: ')
+                            # print('\nuser does not exist: ')
                             return
                         for key, val in user_dict.items():
                             setattr(usr, key, val)
@@ -130,7 +141,8 @@ class DBStorage:
         except SQLAlchemyError as exc:
             print(f'An error occured in add new user: {exc}')
         finally:
-            print('end of transaction for add new user!')
+            pass
+            # print('end of transaction for add new user!')
 
     def get(self, model, model_id=''):
         """
@@ -207,17 +219,18 @@ class DBStorage:
                 session.add(new_org)
                 session.commit()
                 orgId = new_org.__dict__['orgId']
-                print('orgId: ', orgId)
+                # print('orgId: ', orgId)
                 # add user_organisation
                 new_user_org = User_Organisation(userId=user_id, orgId=orgId)
                 session.add(new_user_org)
                 session.commit()
                 return orgId
         except SQLAlchemyError as exc:
-            print(f'An error occured in add new user: {exc}')
+            print(f'An error occured in add new organisation: {exc}')
             session.rollback()
         finally:
-            print('end of transaction for add new user!')
+            pass
+            # print('end of transaction for add new organisation!')
 
     def add_user_organization(self, orgId=None, userId=None):
         """
@@ -235,7 +248,6 @@ class DBStorage:
         except Exception as exc:
             print(f'error adding userId and orgId to user_organization: {exc}')
             return False
-        return
 
     def check_password(self, data):
         """
@@ -261,14 +273,46 @@ class DBStorage:
         except Exception as exc:
             print(f'error in checking password: {exc}')
 
+    def sess(self):
+        """
+        Returns self.Session instance
+        """
+        session = self.Session()
+        return session
+
+    def delete_data(self, model=None, all=False):
+        """
+        Deletes all data from tables
+        """
+        try:
+            if model and not all:
+                klass = MODELS[model]
+                with self.sess() as sess:
+                    sess.query(klass).delete(synchronize_session='fetch')
+                    sess.commit()
+            if all and not model:
+                with self.sess() as sess:
+                    for klass in MODELS.values():
+                        sess.query(klass).delete(synchronize_session='fetch')
+                    sess.commit()
+        except Exception as exc:
+            print(f'error occured, could delete data: {exc}')
+
     def create_tables(self):
         """
         Creates all mapped models as tabales
         """
-        Base.metadata.create_all(self.engine)
+        try:
+            # print('creating tables...')
+            Base.metadata.create_all(self.engine)
+        except Exception as exc:
+            print(f'an error occured: {exc}')
 
     def drop_tables(self):
         """
         Creates all mapped models as tabales
         """
-        Base.metadata.drop_all(self.engine)
+        try:
+            Base.metadata.drop_all(self.engine)
+        except Exception as exc:
+            print(f'an error occured: {exc}')
