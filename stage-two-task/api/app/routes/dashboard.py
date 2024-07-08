@@ -30,15 +30,16 @@ class DashBoard(MethodView):
             with DBStorage() as session:
                 user = session.get('User', id)
             if user:
-                payload.pop("statusCode", None)
-                payload["status"] = "success"
-                payload["message"] = "Successful"
-                payload["data"] = user
+                payload = {
+                    "status": "success",
+                    "message": "Successful",
+                    "data": user
+                }
                 return jsonify(payload), 200
+            else:
+                return jsonify(payload), 401
         except Exception as exc:
             print(f'error in users route: {exc}')
             return jsonify(payload), 401
-
-        return jsonify(payload), 401
 
 dashboard.add_url_rule('/<string:id>', view_func=DashBoard.as_view("dashboard"))
