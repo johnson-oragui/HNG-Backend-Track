@@ -58,7 +58,6 @@ def is_valid_email(email):
         email = v["email"]
         return True
     except EmailNotValidError as e:
-        print(str(e))
         return str(e)
 
 
