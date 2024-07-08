@@ -232,6 +232,25 @@ class DBStorage:
             pass
             # print('end of transaction for add new organisation!')
 
+    def get_org_for_a_user(self, userId=None, orgId=None):
+        """
+        retrieves an organisation that belongs to a user
+        """
+        if userId and orgId:
+            if isinstance(userId, str) and isinstance(orgId, str):
+                try:
+                    with self.sess() as sess:
+                        user_org = sess.query(User_Organisation).filter_by(userId=userId, orgId=orgId).one_or_none()
+                        if user_org:
+                            return self.to_dict(user_org)
+                        else:
+                            return
+                except Exception as exc:
+                    print(f'error getting organisation for a user: {exc}')
+            else:
+                raise ValueError()
+        return
+
     def add_user_organization(self, orgId=None, userId=None):
         """
         Inserts a user and an organization into user_organization table
