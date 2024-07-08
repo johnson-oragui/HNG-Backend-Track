@@ -2,3 +2,4 @@
 __pycache__
 .env
 z.py
+node_modules
