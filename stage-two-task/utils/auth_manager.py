@@ -28,7 +28,7 @@ class AuthManager:
             payload = {
                 "userId": user_dict['userId'],
                 "iat": now,  # issued at
-                "exp": now + timedelta(minutes=10),  #expiration time
+                "exp": now + timedelta(minutes=100),  #expiration time
             }
 
             token = jwt.encode(payload=payload, key=JWT_SECRET, algorithm="HS256")
@@ -53,13 +53,12 @@ class AuthManager:
         try:
             # Decode the token without signature verification to inspect the payload
             payload = jwt.decode(token, options={"verify_signature": False})
-            # print(f"Decoded token payload without validation: {payload}")
             return payload
         except jwt.InvalidTokenError as e:
             return {"error": str(e)}
 
     @staticmethod
-    def login_required(request, org=False):
+    def login_required(request, org=False, single=False):
         def protected(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
@@ -74,21 +73,24 @@ class AuthManager:
                 Authorization = request.headers.get('Authorization')
                 try:
                     token = Authorization.split(' ')[1]
-                    # print('token from login_required: ', token)
 
                     if token:
                         userId = AuthManager.verify_jwt_token(token)
-                        # print('userId from login_required: ', userId)
                         if not userId:
                             return jsonify(error_payload)
 
-                        if org:
+                        if org and not single:
                             args = args + (userId,)
-                            # return func(*args, **kwargs)
+                            return func(*args, **kwargs)
+                        if org and single:
+                            new_args = list(args)
+                            new_args.append(userId)
+                            tuple_args = tuple(new_args)
+                            return func(*tuple_args, **kwargs)
                     else:
                         return jsonify(error_payload)
                 except Exception as exc:
-                    print(f'error getting token: ')
+                    print(f'error getting token: {exc}')
                     return jsonify(error_payload)
                 return func(*args, **kwargs)
             wrapper.__qualname__ = func.__qualname__
