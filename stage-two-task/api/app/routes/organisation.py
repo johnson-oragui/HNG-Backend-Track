@@ -56,28 +56,23 @@ class Organisations(MethodView):
         Create new organization
 
         """
-        # print('handling creation of a single organisation for a single user...')
         payload = {
             "status": "Bad Request",
             "message": "Client error",
             "statusCode": 400
         }
         try:
-            # print('before content type: ', request.content_type)
             if request.content_type == "application/json":
                 data: dict = request.get_json()
-                # print("Received data:", data)
                 for key, value in data.items():
                     data[key] = escape_input(value)
                 if not (data['name'].strip() == '') and isinstance(data['name'], str):
                     if len(data) == 2:
-                        # print("Received data:", data)
                         with DBStorage() as sess:
                             # create an organization with the data
                             orgId = sess.add_update_organisation(user_id=userId,
                                                                        org_dict=data)
                         if orgId:
-                            # print("Organisation created successfully")
                             data["orgId"] = orgId
                             data["description"] = data.get("description", '')
 
@@ -98,12 +93,11 @@ class Organisation(MethodView):
     """
     Class to handle retriving a single organization
     """
-    @AuthManager.login_required(request=request)
-    def get(self, orgId):
+    @AuthManager.login_required(request=request, org=True, single=True)
+    def get(self, userId, orgId):
         """
         Retrieves a single organisation
         """
-        # print('handling a single organisation for a single user...')
         payload = {
             "status": "Bad Request",
             "message": "Client error",
@@ -111,7 +105,7 @@ class Organisation(MethodView):
         }
         try:
             with DBStorage() as session:
-                organisation = session.get('Organisation', model_id=orgId)
+                organisation = session.get_org_for_a_user(userId=userId, orgId=orgId)
 
             if organisation:
                 payload.pop("statusCode", None)
@@ -131,7 +125,6 @@ class Organisation(MethodView):
         """
         Add a user to an existing organization
         """
-        # print('handling adding a single user to a single organisatio...')
         payload = {
             "status": "Bad Request",
             "message": "Client error",
@@ -152,10 +145,17 @@ class Organisation(MethodView):
                         with DBStorage() as sess:
                             user_org = sess.add_user_organization(orgId=orgId, userId=userId)
                         if user_org:
-                            payload.pop("statusCode", None)
-                            payload["status"] = "success"
-                            payload["message"] = "User added to organisation successfully"
+                            payload = {
+                                "status": "success",
+                                "message": "User added to organisation successfully"
+                            }
                             return jsonify(payload), 200
+                        else:
+                            return jsonify(payload), 400
+                    else:
+                        return jsonify(payload), 400
+                else:
+                    return jsonify(payload), 400
         except Exception as exc:
             print(f'could not add a user to an organisation: {exc}')
             return jsonify(payload), 400
