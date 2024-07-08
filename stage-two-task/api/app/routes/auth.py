@@ -8,7 +8,7 @@ from utils.validate_data import validate_data
 from models import DBStorage
 from utils.auth_manager import AuthManager
 
-auth = Blueprint('auth', __name__, url_prefix='/auth')
+auth = Blueprint('auth', __name__, url_prefix='/api/auth')
 
 
 class Register(MethodView):
@@ -35,21 +35,22 @@ class Register(MethodView):
                 try:
                     # print('valid_data: ', valid_data)
                     with DBStorage() as session:
-                        new_user = session.add_update_user(user_dict=valid_data, update=False)
+                        new_user: dict = session.add_update_user(user_dict=valid_data, update=False)
                 except Exception as exc:
                     print(f'exception occured during registration: {exc}')
                     return jsonify(payload), 400
                 if new_user:
                     # print('new_user: ', new_user)
-                    token = AuthManager.gerenate_token(new_user)
+                    token: str = AuthManager.gerenate_token(new_user)
                     # print('token: ', token)
-                    payload.pop("statusCode", None)
-                    payload["status"] = "success"
-                    payload["message"] =  'Registration successful'
-                    payload["data"] = {
+                    payload = {
+                        "status": "success",
+                        "message": 'Registration successful',
+                        "data": {
                             "accessToken": token,
                             "user": new_user
                         }
+                    }
                     return jsonify(payload), 201
             return jsonify(payload), 400
         except Exception as exc:
@@ -84,14 +85,19 @@ class Login(MethodView):
                         # print('here:')
                         token = AuthManager.gerenate_token(user_dict=user_valid)
                         if token:
-                            payload.pop("statusCode", None)
-                            payload["status"] = "success"
-                            payload["message"] =  "Login successful"
-                            payload["data"] = {
+                            payload = {
+                                "status": "success",
+                                "message":  "Login successful",
+                                "data": {
                                     "accessToken": token,
                                     "user": user_valid
                                     }
+                            }
                             return jsonify(payload), 200
+                        else:
+                            return jsonify(payload), 401
+                    else:
+                        return jsonify(payload), 401
         except Exception as exc:
             print(f'Error logging in user: {exc}')
             return jsonify(payload), 401
