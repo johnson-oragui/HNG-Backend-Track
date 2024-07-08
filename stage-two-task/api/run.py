@@ -4,9 +4,9 @@ Runs flask app
 """
 from api.app import create_app
 
-app_instance = create_app()
+app = create_app().app
 
-@app_instance.app.after_request
+@app.after_request
 def after_request(response):
     """
     Sets header for no sniff
@@ -16,4 +16,4 @@ def after_request(response):
 
 
 if __name__ == '__main__':
-    app_instance.app.run()
+    app.run()
