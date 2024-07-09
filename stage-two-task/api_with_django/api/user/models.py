@@ -9,11 +9,11 @@ class User(models.Model):
     Class to represent User in the table
     """
     objects = MyUserModelManager()
-    id = models.CharField(primary_key=True, unique=True, null=False, auto_created=True, default=str(uuid4()), max_length=60)
+    id = models.CharField(primary_key=True, unique=True, null=False, auto_created=True, default=str(uuid4()), max_length=80)
     firstName = models.CharField(null=False, max_length=60)
     lastName = models.CharField(null=False, max_length=60)
-    email = models.CharField(null=False, unique=True, max_length=60)
-    password = models.CharField(null=False, max_length=60)
+    email = models.EmailField(null=False, unique=True, max_length=60)
+    password = models.CharField(null=False, max_length=80)
     phone = models.CharField(max_length=15)
     create_at = models.DateField(default=now)
     update_at = models.DateField(default=now)
