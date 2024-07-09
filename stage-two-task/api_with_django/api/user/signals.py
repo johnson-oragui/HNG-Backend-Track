@@ -36,8 +36,6 @@ def auto_create_organisation_and_user_organisation(sender, instance, created, ra
         raise Exception(
             "Could not auto create organisation and user_organisation from newly created user"
             ) from exc
-    finally:
-        print('end of post_save signal for user creation!')
 
 @receiver(pre_save, sender=User)
 def update_updated_at_field(sender, instance, **kwargs):
@@ -52,5 +50,3 @@ def update_updated_at_field(sender, instance, **kwargs):
         raise Exception(
             "Could not updating user"
             ) from exc
-    finally:
-        print('end of pre_save signal for user update!')
