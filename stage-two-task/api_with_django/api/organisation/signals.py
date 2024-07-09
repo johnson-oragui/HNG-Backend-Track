@@ -34,8 +34,6 @@ def auto_create_user_organisation(sender, instance, created, raw, using, update_
         raise Exception(
             "Could not auto create user_organisation from newly created organisation"
             ) from exc
-    finally:
-        print('end of post_save signal for organisation creation!')
 
 @receiver(pre_save, sender=Organisation)
 def update_updated_at_field(sender, instance, **kwargs):
@@ -50,5 +48,3 @@ def update_updated_at_field(sender, instance, **kwargs):
         raise Exception(
             "Could not updating organisation"
             ) from exc
-    finally:
-        print('end of pre_save signal for organisation update!')
