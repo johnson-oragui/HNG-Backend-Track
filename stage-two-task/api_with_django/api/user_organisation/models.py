@@ -3,10 +3,11 @@ from django.contrib.auth.models import User
 from django.utils.timezone import now
 from user.models import User
 from organisation.models import Organisation
+from api.utils import gen_uuid_str
 
 
 class UserOrganisation(models.Model):
-    id = models.AutoField(primary_key=True, null=False)
+    user_org_id = models.CharField(null=False, default=gen_uuid_str, max_length=60)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE)
     create_at = models.DateField(default=now)
