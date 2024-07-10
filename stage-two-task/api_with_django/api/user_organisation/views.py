@@ -1,37 +1,57 @@
+import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from user_organisation.utils import get_organzations, get_organzation
+from user_organisation.utils import (get_organzations,
+                                     get_organzation,
+                                     validate_data,
+                                     add_organzation)
 
 
 @csrf_exempt
 def get_organisations(request):
     """
     Retrieves all organisations
+
+    Adds a new organisation
     """
     payload1 = {
         "status": "Bad Request",
         "message": "Client error",
         "statusCode": 400
     }
+    if not request.user:
+        return JsonResponse(payload1, status=400)
     try:
-        if request.method != 'GET':
-            return JsonResponse(payload1, status=405)
-        if not request.user:
-            return JsonResponse(payload1, status=400)
-        all_orgs = get_organzations(request.user)
-        payload = {
-            "status": "success",
-            "message": "Successful",
-            "data": {
-                "organisations": all_orgs
+        if request.method == 'GET':
+            all_orgs = get_organzations(request.user)
+            payload = {
+                "status": "success",
+                "message": "Successful",
+                "data": {
+                    "organisations": all_orgs
+                }
             }
-        }
-        return JsonResponse(payload, status=200)
+            return JsonResponse(payload, status=200)
 
-
+        elif request.method == 'POST':
+            data = json.loads(request.body.decode())
+            if not data:
+                return JsonResponse(payload1, status=400)
+            data = validate_data(data)
+            if not data:
+                return JsonResponse(payload1, status=400)
+            org = add_organzation(data, request.user)
+            payload2 = {
+                "status": "success",
+                "message": "Organisation created successfully",
+                "data": org
+            }
+            return JsonResponse(payload2, status=201)
+        else:
+            return JsonResponse({"error": "Method not allowed"}, status=405)
     except Exception as exc:
         print(f'error retrieving all organizations: {exc}')
-        return JsonResponse(payload1, status=405)
+        return JsonResponse(payload1, status=400)
 
 def get_organisation(request, orgId):
     """
@@ -44,7 +64,7 @@ def get_organisation(request, orgId):
     }
     try:
         if request.method != 'GET':
-            return JsonResponse(payload1, status=405)
+            return JsonResponse({"error": "Method not allowed"}, status=405)
         if not request.user:
             return JsonResponse(payload1, status=400)
         org: dict = get_organzation(request.user, orgId)
