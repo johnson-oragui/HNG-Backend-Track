@@ -1,6 +1,7 @@
 from user_organisation.models import UserOrganisation
 from organisation.models import Organisation
 from user.models import User
+from authentication.utils import escape_data
 
 
 def get_organzations(data: dict):
@@ -72,7 +73,7 @@ def get_organzation(data: dict, orgId: str):
         # retrieve the user object claiming the rights to see the organisation
         user = User.objects.get(id=data.get('user_id'))
 
-        # oterate through the list of user_orgs returned
+        # iterate through the list of user_orgs returned
         for user_o in user_orgs:
             # check if the user is a member in one of the user_orgs and check
             # if the user_org the user is a member in is the same org the user is
@@ -82,14 +83,38 @@ def get_organzation(data: dict, orgId: str):
                 return sanitize_organzations(org=org)
         return {}
     except Exception as exc:
-        print(f'error retrieving all organiztions: {exc}')
+        print(f'error retrieving an organiztion: {exc}')
 
 
-def add_organzation(data):
+def add_organzation(data: dict, user_data: dict):
     """
-    Retrieves all organzations
+    add an organzation
     """
     try:
-        pass
+        data["owner_email"] = user_data['email']
+        org = Organisation.objects.create(**data)
+        if org:
+            return sanitize_organzations(org=org)
+        else:
+            return
+    except Exception as exc:
+        print(f'error retrieving all organiztions: {exc}')
+
+def validate_data(data: dict):
+    """
+    Validates data
+    """
+    try:
+        if len(data) < 2 or data.get('name').strip() == '' or not data.get('name'):
+            return
+        if data.get('description') and not isinstance(data.get('description'), str):
+            return
+        if "name" in data and "description" in data:
+            if isinstance(data.get('name'), str):
+                return escape_data(data)
+            else:
+                return
+        else:
+            return
     except Exception as exc:
         print(f'error retrieving all organiztions: {exc}')
