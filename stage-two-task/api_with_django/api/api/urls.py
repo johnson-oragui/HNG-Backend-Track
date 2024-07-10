@@ -17,7 +17,8 @@ from django.contrib import admin
 from django.urls import path
 from authentication.views import register_user, login_user
 from user.views import get_user
-from user_organisation.views import get_organisations, get_organisation
+from user_organisation.views import get_organisations, get_organisation, add_user
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -25,5 +26,6 @@ urlpatterns = [
     path('api/auth/login', login_user, name='login_user'),
     path('api/users/<str:id>', get_user, name="get_user"),
     path('api/organisations', get_organisations, name="get_organisations"),
-    path('api/organisations/<str:orgId>', get_organisation, name="get_organisation")
+    path('api/organisations/<str:orgId>', get_organisation, name="get_organisation"),
+    path('api/organisations/<str:orgId>/users', add_user, name='add_user'),
 ]
