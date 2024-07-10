@@ -100,11 +100,42 @@ def add_organzation(data: dict, user_data: dict):
     except Exception as exc:
         print(f'error retrieving all organiztions: {exc}')
 
-def validate_data(data: dict):
+def add_user_to_organisation(orgId: str, userData: dict, token_user: dict):
+    """
+    Adds a user to an organisation
+    """
+    try:
+        user_to_add = User.objects.get(id=userData.get('userId'))
+        if not user_to_add:
+            return
+        user_will_add = User.objects.get(email=token_user['email'],
+                                         id=token_user['user_id'])
+        if not user_will_add:
+            return
+        org = Organisation.objects.get(id=orgId)
+        if not org:
+            return
+        user_org = UserOrganisation.objects.create(user=user_to_add,
+                                                   organisation=org,
+                                                   role='member')
+        return True
+    except Exception as exc:
+        print(f'error adding use rto organisation: {exc}')
+        return
+
+def validate_data(data: dict, user_id=None):
     """
     Validates data
     """
     try:
+        if data and user_id:
+            user_id = data.get('userId')
+            if len(data) != 1:
+                return
+            if user_id and user_id.strip() and isinstance(user_id, str):
+                return escape_data(data)
+            else:
+                return
         if len(data) < 2 or data.get('name').strip() == '' or not data.get('name'):
             return
         if data.get('description') and not isinstance(data.get('description'), str):
