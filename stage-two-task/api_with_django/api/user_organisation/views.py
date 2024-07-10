@@ -4,7 +4,8 @@ from django.views.decorators.csrf import csrf_exempt
 from user_organisation.utils import (get_organzations,
                                      get_organzation,
                                      validate_data,
-                                     add_organzation)
+                                     add_organzation,
+                                     add_user_to_organisation)
 
 
 @csrf_exempt
@@ -78,3 +79,37 @@ def get_organisation(request, orgId):
     except Exception as exc:
         print(f'error retrieving a single organizations: {exc}')
         return JsonResponse(payload1, status=400)
+
+@csrf_exempt
+def add_user(request, orgId):
+    """
+    Adds a user to an organisation
+    """
+    payload1 = {
+        "status": "Bad Request",
+        "message": "Client error",
+        "statusCode": 400
+    }
+    if request.method == 'POST':
+        if not request.user:
+            return JsonResponse(payload1, status=400)
+        try:
+            data = json.loads(request.body.decode())
+            data2 = validate_data(data, user_id=True)
+            if data2:
+                user_added = add_user_to_organisation(orgId, data, request.user)
+                if user_added:
+                    payload = {
+                        "status": "success",
+                        "message": "User added to organisation successfully"
+                    }
+                    return JsonResponse(payload, status=200)
+                else:
+                    return JsonResponse(payload1, status=400)
+            else:
+                return JsonResponse(payload1, status=400)
+        except Exception as exc:
+            print(f'error adding user to organisation: {exc}')
+            return JsonResponse(payload1, status=400)
+    else:
+        return JsonResponse({"error": "Method not Allowed"}, status=405)
