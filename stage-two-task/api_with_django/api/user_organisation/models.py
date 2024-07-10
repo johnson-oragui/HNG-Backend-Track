@@ -30,8 +30,16 @@ class UserOrganisation(models.Model):
         # ordering = ['created_at']
         unique_together = (('user', 'organisation'),)
 
-    def owners(self):
+    @classmethod
+    def owners(cls):
         """
+        Retrieve all user-organisation relationships where the role is 'owner'.
+        """
+        return cls.objects.filter(role='owner')
 
+    @classmethod
+    def members(cls):
         """
-        return self.filter(role='owner')
+        Retrieve all user-organisation relationships where the role is 'member'.
+        """
+        return cls.objects.filter(role='member')
