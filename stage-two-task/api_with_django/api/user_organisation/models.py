@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.timezone import now
+from datetime import datetime
 from user.models import User
 from organisation.models import Organisation
 from api.utils import gen_uuid_str
@@ -10,8 +11,8 @@ class UserOrganisation(models.Model):
     user_org_id = models.CharField(null=False, default=gen_uuid_str, max_length=60)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE)
-    create_at = models.DateField(default=now)
-    update_at = models.DateField(default=now)
+    created_at = models.DateField(default=datetime.now)
+    updated_at = models.DateField(default=datetime.now)
 
     # Define choices for role with default as "owner"
     ROLE_CHOICES = (
@@ -34,6 +35,3 @@ class UserOrganisation(models.Model):
 
         """
         return self.filter(role='owner')
-
-    def __str__(self):
-        return f"{self.user.email} - {self.organisation.name} ({self.role})"
