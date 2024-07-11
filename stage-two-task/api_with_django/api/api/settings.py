@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'organisation',
     'authentication',
     'user_organisation',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
