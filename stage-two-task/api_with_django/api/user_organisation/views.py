@@ -6,9 +6,28 @@ from user_organisation.utils import (get_organzations,
                                      validate_data,
                                      add_organzation,
                                      add_user_to_organisation)
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
+@swagger_auto_schema(
+    methods=['get', 'post'],
+    operation_description="Retrieves all organisations and Adds a new organisation",
+    responses={200: openapi.Response('Success', openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'status': openapi.Schema(type=openapi.TYPE_STRING),
+            'message': openapi.Schema(type=openapi.TYPE_STRING),
+            'data': {
+                "organisations": openapi.Schema(type=openapi.TYPE_OBJECT)
+            }
+        }
+    ))}
+)
 
 @csrf_exempt
+@api_view(['GET', 'POST'])
 def get_organisations(request):
     """
     Retrieves all organisations
@@ -54,6 +73,21 @@ def get_organisations(request):
         print(f'error retrieving all organizations: {exc}')
         return JsonResponse(payload1, status=400)
 
+@swagger_auto_schema(
+    method='get',
+    operation_description="Retrieves a signle organzations with provided id",
+    responses={200: openapi.Response('Success', openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'status': openapi.Schema(type=openapi.TYPE_STRING),
+            'message': openapi.Schema(type=openapi.TYPE_STRING),
+            'data': openapi.Schema(type=openapi.TYPE_OBJECT)
+        }
+    ))}
+)
+
+@csrf_exempt
+@api_view(['GET'])
 def get_organisation(request, orgId):
     """
     Retrieves a signle organzations
@@ -80,7 +114,21 @@ def get_organisation(request, orgId):
         print(f'error retrieving a single organizations: {exc}')
         return JsonResponse(payload1, status=400)
 
+@swagger_auto_schema(
+    method='post',
+    operation_description="Adds a user to an organisation",
+    responses={200: openapi.Response('Success', openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'status': openapi.Schema(type=openapi.TYPE_STRING),
+            'message': openapi.Schema(type=openapi.TYPE_STRING),
+            'data': openapi.Schema(type=openapi.TYPE_OBJECT)
+        }
+    ))}
+)
+
 @csrf_exempt
+@api_view(['POST'])
 def add_user(request, orgId):
     """
     Adds a user to an organisation
