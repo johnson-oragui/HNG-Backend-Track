@@ -1,9 +1,28 @@
 import json
 from django.http import JsonResponse
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
 from user.utils import retrieve_user
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+
+@swagger_auto_schema(
+    method='get',
+    operation_description="Get a user with provided id",
+    responses={200: openapi.Response('Success', openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'status': openapi.Schema(type=openapi.TYPE_STRING),
+            'message': openapi.Schema(type=openapi.TYPE_STRING),
+            'data': openapi.Schema(type=openapi.TYPE_OBJECT)
+        }
+    ))}
+)
 
 
+@csrf_exempt
+@api_view(['GET'])
 def get_user(request, id):
     """
     Retrieve user with a given id
