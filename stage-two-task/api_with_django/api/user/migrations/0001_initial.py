@@ -2,8 +2,7 @@
 
 import datetime
 from django.db import migrations, models
-from django.utils.timezone import utc
-
+from datetime import timezone
 
 class Migration(migrations.Migration):
 
@@ -22,8 +21,8 @@ class Migration(migrations.Migration):
                 ('email', models.CharField(max_length=60, unique=True)),
                 ('password', models.CharField(max_length=60)),
                 ('phone', models.CharField(max_length=15)),
-                ('create_at', models.DateField(default=datetime.datetime(2024, 7, 8, 22, 50, 27, 554207, tzinfo=utc))),
-                ('update_at', models.DateField(default=datetime.datetime(2024, 7, 8, 22, 50, 27, 554246, tzinfo=utc))),
+                ('create_at', models.DateField(default=datetime.datetime(2024, 7, 8, 22, 50, 27, 554207, tzinfo=timezone.utc))),
+                ('update_at', models.DateField(default=datetime.datetime(2024, 7, 8, 22, 50, 27, 554246, tzinfo=timezone.utc))),
             ],
             options={
                 'db_table': 'users',
