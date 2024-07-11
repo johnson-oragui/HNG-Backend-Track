@@ -38,7 +38,7 @@ def register_user(request):
             data = json.loads(request.body.decode('utf-8'))
             data, data_valid = validate_data(data)
             if not data_valid:
-                return JsonResponse(data, status=400)
+                return JsonResponse(data, status=422)
             else:
                 new_user = create_user(data)
                 if new_user:
