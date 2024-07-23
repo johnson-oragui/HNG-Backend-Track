@@ -1,4 +1,4 @@
-HNG Stage 2 Backend Task: User Authentication & Organisation API
+HNG Stage 2 Backend Task: User Authentication & Organisation API.
 
 This project implements a RESTful API using Django and PostgreSQL for user authentication and organisation management.
 
